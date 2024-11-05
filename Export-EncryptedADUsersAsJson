@@ -1,0 +1,78 @@
+<#
+.SYNOPSIS
+    Erstellt einen Ordner am angegebenen Pfad.
+
+.DESCRIPTION
+    Die Funktion `Export-EncryptedADUsersAsJson` erstell ein verschlüsseltes JSON File in den angegeben Pfad mit den Anttribute welche im Filter angegeben werden
+
+.PARAMETER AES256__Key
+    Der AES 256 Key wlecher zur Verschlüsselung verwendet werden soll (32 Zeichen für AES-256)
+
+.PARAMETER IV_Key
+    Der Initialisierungsvektor für die AES 256 Verschlüsselung (16 Zeichen für den Initialisierungsvektor)
+
+.PARAMETER Filter
+    Die AD Filter Parameter (bspw: "department","mail","DisplayName")
+
+.PARAMETER ExportPath
+    Der Name des Ortes wo das File gespeichert werden soll (inkl. Dateiname)
+#>
+
+
+
+function Export-EncryptedADUsersAsJson {
+
+param (
+    # 32 Zeichen für AES-256
+    [Parameter(Mandatory=$true)]
+    [string]
+    $AES256__Key,
+    #  16 Zeichen für den Initialisierungsvektor
+    [Parameter(Mandatory=$true)]
+    [string]
+    $IV_Key,
+    # Filter Parameter
+    [Parameter(Mandatory=$true)]
+    [json]
+    $JSONData,
+    # Datei-Pfad für den Export (bspw. C:\temp\Export.enc)
+    [Parameter(Mandatory=$true)]
+    [string]
+    $ExportPath
+            
+)
+
+begin {
+
+}
+
+process {
+    
+
+# AES-256-Schlüssel und IV generieren
+$key = [System.Text.Encoding]::UTF8.GetBytes($AES256__Key) # 32 Zeichen für AES-256
+$iv = [System.Text.Encoding]::UTF8.GetBytes($IV_Key) # 16 Zeichen für den Initialisierungsvektor (IV)
+
+# JSON-Daten in Byte-Array umwandeln
+$JSONData = [System.Text.Encoding]::UTF8.GetBytes($ADObject)
+
+# AES-Verschlüsselung durchführen
+$aes = [System.Security.Cryptography.Aes]::Create()
+$aes.Key = $key
+$aes.IV = $iv
+$encryptor = $aes.CreateEncryptor()
+
+# Verschlüsselte Daten erstellen
+$encryptedBytes = $encryptor.TransformFinalBlock($ADObjectBytes, 0, $ADObjectBytes.Length)
+$encryptedData = [Convert]::ToBase64String($encryptedBytes)
+}
+
+
+end {
+
+    retrun $encryptedData 
+    Remove-Variable -Name key,iv,AES256__Key,IV_Key,ADObject
+
+}
+
+}
